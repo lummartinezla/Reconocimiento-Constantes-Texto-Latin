@@ -1,0 +1,53 @@
+import time
+linea_c = renglon[1].copy()
+
+
+filas, columnas = linea_c.shape[:2]
+
+
+
+phas = 20
+pts1 = np.float32([[phas, 0], [columnas, 0], [0, filas], [columnas - phas, filas]])
+pts2 = np.float32([[0, 0], [columnas, 0], [0, filas], [columnas, filas]])
+
+M = cv2.getPerspectiveTransform(pts1, pts2)
+
+linea_c_deslant = cv2.warpPerspective(linea_c, M, (columnas, filas))
+
+linea_c_deslant_mb = cv2.threshold(
+    cv2.medianBlur(linea_c_deslant, 5), 20, 255, cv2.THRESH_BINARY
+)[1]
+
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 5))
+cerrada = cv2.morphologyEx(linea_c_deslant_mb, cv2.MORPH_CLOSE, kernel)
+
+fil,col = linea_c_deslant.shape 
+i = 0
+window = []
+for i in range(col):
+    window.append(linea_c_deslant[0:fil,i+20:i+40])
+    clone = linea_c_deslant.copy()
+    cv2.rectangle(clone, (i, 0), (i+35,fil), (255, 255, 255), 2)
+    cv2.imshow("Window", clone)
+    cv2.waitKey(1)
+    time.sleep(0.025)
+    cv2.destroyAllWindows
+
+proj = np.sum(cerrada, 0)
+m = 500
+w = np.max(proj)
+result = np.zeros((500, cerrada.shape[1]))
+
+
+for col in range(cerrada.shape[1]):
+    cv2.line(result, (col, 0), (col, int(proj[col] * m / w)), (255, 255, 255), 1)
+
+plt.figure(figsize=(20, 20))
+plt.imshow(linea_c_deslant, cmap=plt.cm.gray)
+plt.show()
+plt.figure(figsize=(20, 20))
+plt.imshow(cerrada, cmap=plt.cm.gray)
+plt.show()
+plt.figure(figsize=(160, 10))
+plt.imshow(result, cmap=plt.cm.gray)
+plt.show()
